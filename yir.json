@@ -1,0 +1,12 @@
+{
+  "repo": "nano-banana-2.1-api",
+  "model": "google/nano-banana-2.1",
+  "links": {
+    "intro": "https://yir.ai",
+    "model": "https://yir.ai/models/nano-banana-2-1",
+    "grades": "https://yir.ai/blog/c2pa-ai-image-api-channel-check",
+    "prices": "https://yir.ai/models/nano-banana-2-1",
+    "signup": "https://yir.ai/console",
+    "docs": "https://docs.yir.ai"
+  }
+}
