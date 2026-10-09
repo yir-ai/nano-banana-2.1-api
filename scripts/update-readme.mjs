@@ -38,9 +38,9 @@ async function pricesBlock() {
   const divider = `|---|---:|${providers.map(() => "---:").join("|")}|`;
   const rows = specs.map((s, i) => {
     const cells = providers.map(([code]) => {
-      const c = s.channels.find((x) => x.provider_code === code);
-      if (!c || !priced(c)) return "—";
-      return usd(c.amount_micros);
+      // A provider can list several variants; show its cheapest available one.
+      const prices = s.channels.filter((x) => x.provider_code === code && priced(x)).map((x) => x.amount_micros);
+      return prices.length ? usd(Math.min(...prices)) : "—";
     });
     const min = Math.min(...s.channels.filter(priced).map((c) => c.amount_micros));
     return `| ${s.specification_label} | ${official[i]} | ${cells.map((cell) => (cell === usd(min) ? `**${cell}**` : cell)).join(" | ")} |`;
