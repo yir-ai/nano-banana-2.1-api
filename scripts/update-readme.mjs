@@ -16,26 +16,39 @@ const [detail, contract] = await Promise.all([
 const usd = (micros) => `$${(micros / 1e6).toFixed(4).replace(/0{1,2}$/, "")}`;
 const today = new Date().toISOString().slice(0, 10);
 
-function pricesBlock() {
+// The official price comes from a free quote, so it stays in the table when the official channel is offline.
+async function officialPrice(spec) {
+  const resolution = spec.specification_label.split(" · ")[0];
+  const quote = await client.quoteImage({
+    model: config.model,
+    input: { type: "text", prompt: "price check" },
+    parameters: { resolution, aspect_ratio: "1:1" },
+  });
+  return quote.official?.amount ? usd(Math.round(Number(quote.official.amount) * 1e6)) : "—";
+}
+
+async function pricesBlock() {
   // One row per output size; input modes share prices, so keep text-to-image rows only.
   const specs = detail.specifications.filter((s) => s.input_mode === "text");
+  const official = await Promise.all(specs.map(officialPrice));
   const priced = (c) => c.availability === "available" && c.amount_micros !== undefined;
   // Channels without a published, available price stay out of the table instead of showing empty columns.
   const providers = [...new Map(specs.flatMap((s) => s.channels).filter(priced).map((c) => [c.provider_code, c.provider_label])).entries()];
-  const header = `| Output | ${providers.map(([, label]) => label).join(" | ")} |`;
-  const divider = `|---|${providers.map(() => "---:").join("|")}|`;
-  const rows = specs.map((s) => {
+  const header = `| Output | Official | ${providers.map(([, label]) => label).join(" | ")} |`;
+  const divider = `|---|---:|${providers.map(() => "---:").join("|")}|`;
+  const rows = specs.map((s, i) => {
     const cells = providers.map(([code]) => {
       const c = s.channels.find((x) => x.provider_code === code);
       if (!c || !priced(c)) return "—";
       return usd(c.amount_micros);
     });
     const min = Math.min(...s.channels.filter(priced).map((c) => c.amount_micros));
-    return `| ${s.specification_label} | ${cells.map((cell) => (cell === usd(min) ? `**${cell}**` : cell)).join(" | ")} |`;
+    return `| ${s.specification_label} | ${official[i]} | ${cells.map((cell) => (cell === usd(min) ? `**${cell}**` : cell)).join(" | ")} |`;
   });
   return [
     header, divider, ...rows, "",
-    `Per image, USD. Channel list prices as published by Yir on ${today}; **bold** is the cheapest available channel. ` +
+    `Per image, USD. Official is the model maker's list price; the other columns are channel prices as published by Yir on ${today}, ` +
+      `and **bold** is the cheapest channel available that day. ` +
       `Yir charges what the channel actually bills, with no markup, and nothing when the channel bills nothing. ` +
       `[Live prices](${link("prices")}).`,
   ].join("\n");
@@ -67,7 +80,7 @@ function replaceBlock(text, name, body) {
 }
 
 let readme = readFileSync(readmeURL, "utf8");
-readme = replaceBlock(readme, "prices", pricesBlock());
+readme = replaceBlock(readme, "prices", await pricesBlock());
 readme = replaceBlock(readme, "params", paramsBlock());
 readme = readme.replace(/\{\{link:([a-z_]+)\}\}/g, (_, content) => link(content));
 writeFileSync(readmeURL, readme);

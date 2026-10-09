@@ -7,6 +7,6 @@
     "update-readme": "node scripts/update-readme.mjs"
   },
   "dependencies": {
-    "@yir-ai/sdk": "^0.10.2"
+    "@yir-ai/sdk": "^0.10.1"
   }
 }

@@ -7,13 +7,13 @@ One API key reaches several channels that serve the model. [Yir](https://yir.ai/
 ## Prices by channel
 
 <!-- yir:prices:start -->
-| Output | Google | KIE |
+| Output | Official | KIE |
 |---|---:|---:|
-| 1K · 1:1 | $0.0336 | **$0.02** |
-| 2K · 1:1 | $0.0504 | **$0.03** |
-| 4K · 1:1 | $0.1134 | **$0.045** |
+| 1K · 1:1 | $0.0336 | **$0.015** |
+| 2K · 1:1 | $0.0504 | **$0.025** |
+| 4K · 1:1 | $0.1134 | **$0.04** |
 
-Per image, USD. Channel list prices as published by Yir on 2026-10-09; **bold** is the cheapest available channel. Yir charges what the channel actually bills, with no markup, and nothing when the channel bills nothing. [Live prices](https://yir.ai/models/nano-banana-2-1?utm_source=github&utm_medium=repo&utm_campaign=nano-banana-2.1-api&utm_content=prices).
+Per image, USD. Official is the model maker's list price; the other columns are channel prices as published by Yir on 2026-10-09, and **bold** is the cheapest channel available that day. Yir charges what the channel actually bills, with no markup, and nothing when the channel bills nothing. [Live prices](https://yir.ai/models/nano-banana-2-1?utm_source=github&utm_medium=repo&utm_campaign=nano-banana-2.1-api&utm_content=prices).
 <!-- yir:prices:end -->
 
 Text-to-image and image editing cost the same. Up to 14 reference images per edit.
