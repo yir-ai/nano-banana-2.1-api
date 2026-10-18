@@ -1,30 +1,51 @@
-// Generate one Nano Banana 2.1 image through Yir and save it locally.
-// Usage: YIR_API_KEY=... node examples/generate.mjs "a prompt" [2K] [16:9]
-import { writeFile } from "node:fs/promises";
+// Generate one Nano Banana 2.1 image through Yir and save it to ./output.
+// Usage: YIR_API_KEY=... node examples/generate.mjs "a prompt" [name=value ...] [--image URL ...]
+// Example: node examples/generate.mjs "A lone white horse in still black water under moonlight, fine-art photograph, quiet. No text." resolution=2K aspect_ratio=16:9
+// --image URLs fill reference_image references (Image editing).
+import { mkdir, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { createNodeYirClient, DEFAULT_USER_AGENT } from "@yir-ai/sdk/server";
 
-const [prompt = "A rainy Tokyo alley at night, film still, muted colors", resolution = "1K", aspectRatio = "1:1"] = process.argv.slice(2);
+const MODEL = "google/nano-banana-2.1";
+// Sent unless overridden on the command line; the README lists every parameter.
+const PARAMETERS = {"resolution":"2K","aspect_ratio":"16:9"};
+const TYPES = {"resolution":"string","aspect_ratio":"string","n":"integer"};
+const IMAGE_ROLES = ["reference_image"];
+
+const [prompt = "A lone white horse in still black water under moonlight, fine-art photograph, quiet. No text.", ...rest] = process.argv.slice(2);
+const parameters = { ...PARAMETERS };
+const references = [];
+for (let i = 0; i < rest.length; i++) {
+  if (rest[i] === "--image") {
+    references.push({ role: IMAGE_ROLES[Math.min(references.length, IMAGE_ROLES.length - 1)], url: rest[++i] });
+    continue;
+  }
+  const [name, value] = rest[i].split("=");
+  parameters[name] = TYPES[name] === "boolean" ? value === "true" : TYPES[name] === "integer" ? Number(value) : value;
+}
 
 const client = createNodeYirClient({ userAgent: `yir-gh/nano-banana-2.1-api ${DEFAULT_USER_AGENT}` });
-
 const request = {
-  model: "google/nano-banana-2.1",
-  input: { type: "text", prompt },
-  parameters: { resolution, aspect_ratio: aspectRatio },
+  model: MODEL,
+  input: references.length ? { type: "image", prompt, references } : { type: "text", prompt },
+  parameters,
 };
 
 const quote = await client.quoteImage(request);
-console.log(`Estimated: $${quote.primary.amount} (official: $${quote.official.amount})`);
+const estimate = quote.expected_amount;
+console.log(`Estimated: ${estimate ? `$${estimate}` : "not available in advance"}${quote.official?.amount ? ` (official: $${quote.official.amount})` : ""}`);
 
-// Save the key with the request if you need to recover after a crash; reusing it never double-submits.
-// max_cost guards against runaway charges; it is not the price. You pay what the channel bills.
-const job = await client.submitImage({ ...request, max_cost: "0.20" }, randomUUID());
+// max_cost only guards against runaway charges (3x the estimate leaves room for a pricier fallback).
+// You pay what the channel bills. The UUID is the idempotency key: retry with the same one and the job is never submitted twice.
+const cap = estimate ? { max_cost: (Number(estimate) * 3).toFixed(2) } : {};
+const job = await client.submitImage({ ...request, ...cap }, randomUUID());
+console.log(`Job ${job.id}`);
 const done = await client.waitForJob(job.id);
 
-for (const [i, output] of done.result.files.entries()) {
-  const file = `nano-banana-2.1-${job.id}-${i}.${output.media_type.split("/")[1]}`;
-  await writeFile(file, Buffer.from(await (await fetch(output.url)).arrayBuffer()));
-  console.log(`Saved ${file}`);
+await mkdir("output", { recursive: true });
+for (const [i, file] of done.result.files.entries()) {
+  const path = `output/${job.id}-${i}.${file.media_type.split("/")[1]}`;
+  await writeFile(path, Buffer.from(await (await fetch(file.url)).arrayBuffer()));
+  console.log(`Saved ${path}`);
 }
 console.log(`Charged: $${done.billing?.total_charged_by_yir} via ${done.final_provider}`);

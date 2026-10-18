@@ -1,12 +1,16 @@
 {
   "repo": "nano-banana-2.1-api",
   "model": "google/nano-banana-2.1",
+  "slug": "nano-banana-2-1",
+  "maker": "Google",
+  "released": "2026-10-06",
+  "release_source": "https://ai.google.dev/gemini-api/docs/models/gemini-nano-banana-2.1",
   "links": {
     "intro": "https://yir.ai",
     "model": "https://yir.ai/models/nano-banana-2-1",
+    "prices": "https://yir.ai/models/nano-banana-2-1#model-prices",
     "grades": "https://yir.ai/blog/c2pa-ai-image-api-channel-check",
-    "prices": "https://yir.ai/models/nano-banana-2-1",
     "signup": "https://yir.ai/console",
-    "docs": "https://docs.yir.ai"
+    "docs": "https://docs.yir.ai/getting-started/quickstart"
   }
 }
